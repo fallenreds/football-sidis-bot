@@ -10,6 +10,12 @@ class RegisterTeamsStorage(StatesGroup):
 class GameStorage(StatesGroup):
     first_team = State()
     second_team = State()
+    results = State()
 
-    first_result = State()
-    second_result = State()
+    # first_result = State()
+    # second_result = State()
+
+class EditGameStorage(StatesGroup):
+    first_team = State()
+    second_team = State()
+    results = State()

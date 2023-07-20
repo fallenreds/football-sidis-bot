@@ -27,6 +27,23 @@ async def append_rows(row: list):
         writer.writerow(row)
 
 
+async def edit_csv_row_by_number(file_path, row_number, new_data):
+    try:
+        with open(file_path, 'r', newline='') as csvfile:
+            rows = list(csv.reader(csvfile))
+            if row_number < 0 or row_number >= len(rows):
+                print(f"Invalid row number. The CSV file has {len(rows)} rows.")
+                return
+
+            rows[row_number] = new_data
+
+        with open(file_path, 'w', newline='') as csvfile:
+            csv.writer(csvfile).writerows(rows)
+
+        print(f"Row number {row_number} edited successfully.")
+    except Exception as e:
+        print(f"Error: {e}")
+
 def find_column_number(csv_file, value):
     with open(csv_file, 'r') as file:
         reader = csv.reader(file)
@@ -39,17 +56,34 @@ def find_column_number(csv_file, value):
     return None
 
 
+
+
 async def add_team_results(data: TypedDict('results', {'first_team': 'str', 'second_team': 'str', 'first_result': 'str',
                                                        'second_result': 'str'})):
     headers = await read_headers()
     values = ['H', 'H', 'H']
     if data['first_team'] in headers:
-        values[headers.index(data['first_team'])] = data['first_result']
+        values[headers.index(data['first_team'])] = str(data['first_result'])
 
     if data['second_team'] in headers:
-        values[headers.index(data['second_team'])] = data['second_result']
+        values[headers.index(data['second_team'])] = str(data['second_result'])
 
     await append_rows(values)
+    return values
+
+async def edit_team_results(data: TypedDict('results', {'first_team': 'str', 'second_team': 'str', 'first_result': 'str',
+                                                       'second_result': 'str'}),
+                            row_number
+                            ):
+    headers = await read_headers()
+    values = ['H', 'H', 'H']
+    if data['first_team'] in headers:
+        values[headers.index(data['first_team'])] = str(data['first_result'])
+
+    if data['second_team'] in headers:
+        values[headers.index(data['second_team'])] = str(data['second_result'])
+
+    await edit_csv_row_by_number(CSV_PATH, row_number, values)
     return values
 
 def determine_results(data):

@@ -15,3 +15,13 @@ dp = Dispatcher(bot, storage=storage)
 
 # CSV SETTINGS
 CSV_PATH = 'match.csv'
+
+
+AVAILABLE_COLORS = [
+    "🔵",
+    "🟡",
+    "🟠",
+    "🟢",
+    "⚪️",
+    "🔴",
+]
