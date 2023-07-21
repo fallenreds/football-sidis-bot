@@ -14,7 +14,7 @@ bot = Bot(token=BOT_TOKEN, parse_mode=PARSE_MODE)
 dp = Dispatcher(bot, storage=storage)
 
 # CSV SETTINGS
-CSV_PATH = 'match.csv'
+
 
 
 AVAILABLE_COLORS = [
@@ -25,3 +25,16 @@ AVAILABLE_COLORS = [
     "⚪️",
     "🔴",
 ]
+
+
+COLORS = [
+    'blue',
+    "yellow",
+    "orange",
+    "white",
+    "red",
+    "green",
+
+]
+
+MATCHES_PATH = 'matches/'

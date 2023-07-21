@@ -14,8 +14,12 @@ from states import EditGameStorage
 
 async def edit_games_command_handler(message: types.Message):
     await message.delete()
+
+    try:
+        all_rows = await get_all_rows(message.chat.id)
+    except FileNotFoundError:
+        return await add_or_finish_match(message)
     await EditGameStorage.first_team.set()
-    all_rows = await get_all_rows()
     kb = types.InlineKeyboardMarkup()
 
     for index, game in enumerate(all_rows[1:]):
@@ -33,7 +37,7 @@ async def edit_games_command_handler(message: types.Message):
 async def edit_game_handler(callback: types.CallbackQuery, state: FSMContext):
     row_number = edit_game_callback.parse(callback.data)['row_number']
     await state.update_data(row_number=row_number)
-    teams = await read_headers()
+    teams = await read_headers(callback.message.chat.id)
     return await choose_first_team(callback, teams)
 
 
@@ -51,7 +55,7 @@ async def choose_second_team(callback: types.CallbackQuery, state: FSMContext):
     await callback.message.delete()
 
     team_label = team_callback.parse(callback.data)['team_label']
-    available_teams = await read_headers()
+    available_teams = await read_headers(callback.message.chat.id)
     available_teams.remove(team_label)
     async with state.proxy() as data:
         data['first_team'] = team_label
@@ -92,11 +96,11 @@ async def edit_game_results(callback: types.CallbackQuery,
     await callback.message.delete()
     results = await state.get_data()
     row_number = results['row_number']
-    row_index = len(await get_all_rows())
+    row_index = len(await get_all_rows(callback.message.chat.id))
 
     await state.finish()
-    results_in_order = await edit_team_results(results, int(row_number))
-    teams = await read_headers()
+    results_in_order = await edit_team_results(results, int(row_number),callback.message.chat.id)
+    teams = await read_headers(callback.message.chat.id)
     response = f"{set_delimiter('-', teams)}\n{row_index-1}) {set_delimiter('-', results_in_order)}"
     kb = types.InlineKeyboardMarkup()
     await bot.send_message(callback.message.chat.id, response, reply_markup=kb)

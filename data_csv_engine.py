@@ -1,31 +1,39 @@
 import csv
-from settings import CSV_PATH
 from typing import TypedDict
 import aiomisc
 
-
-async def register_teams(data: TypedDict('teams', {'first': 'str', 'second': 'str', 'third': 'str'})):
-    await set_headers(list(data.values()))
+from settings import MATCHES_PATH
 
 
-async def set_headers(headers: list):
-    with open(CSV_PATH, 'w') as csvfile:
+async def register_teams(data: TypedDict('teams', {'first': 'str', 'second': 'str', 'third': 'str'}), uid):
+    await set_headers(list(data.values()),uid)
+
+
+async def set_headers(headers: list, uid):
+    with open(f'{MATCHES_PATH}{uid}', 'w') as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow(headers)
 
 
-async def read_headers() -> list:
-    with open(CSV_PATH, 'r') as csvfile:
+async def read_headers(uid) -> list:
+    with open(f'{MATCHES_PATH}{uid}', 'r') as csvfile:
         reader = csv.reader(csvfile)
         headers = next(reader)
         return list(headers)
 
 
-async def append_rows(row: list):
-    with open(CSV_PATH, 'a') as csvfile:
+async def append_rows(row: list, uid):
+    with open(f'{MATCHES_PATH}{uid}', 'a') as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow(row)
 
+async def is_registered(uid):
+    try:
+        with open(f'{MATCHES_PATH}{uid}', 'r') as csvfile:
+            pass
+        return True
+    except FileNotFoundError:
+        return False
 
 async def edit_csv_row_by_number(file_path, row_number, new_data):
     try:
@@ -59,8 +67,8 @@ def find_column_number(csv_file, value):
 
 
 async def add_team_results(data: TypedDict('results', {'first_team': 'str', 'second_team': 'str', 'first_result': 'str',
-                                                       'second_result': 'str'})):
-    headers = await read_headers()
+                                                       'second_result': 'str'}), uid):
+    headers = await read_headers(uid)
     values = ['H', 'H', 'H']
     if data['first_team'] in headers:
         values[headers.index(data['first_team'])] = str(data['first_result'])
@@ -68,14 +76,14 @@ async def add_team_results(data: TypedDict('results', {'first_team': 'str', 'sec
     if data['second_team'] in headers:
         values[headers.index(data['second_team'])] = str(data['second_result'])
 
-    await append_rows(values)
+    await append_rows(values,uid)
     return values
 
 async def edit_team_results(data: TypedDict('results', {'first_team': 'str', 'second_team': 'str', 'first_result': 'str',
                                                        'second_result': 'str'}),
-                            row_number
+                            row_number, uid,
                             ):
-    headers = await read_headers()
+    headers = await read_headers(uid)
     values = ['H', 'H', 'H']
     if data['first_team'] in headers:
         values[headers.index(data['first_team'])] = str(data['first_result'])
@@ -83,7 +91,7 @@ async def edit_team_results(data: TypedDict('results', {'first_team': 'str', 'se
     if data['second_team'] in headers:
         values[headers.index(data['second_team'])] = str(data['second_result'])
 
-    await edit_csv_row_by_number(CSV_PATH, row_number, values)
+    await edit_csv_row_by_number(f'{MATCHES_PATH}{uid}', row_number, values)
     return values
 
 def determine_results(data):
@@ -128,15 +136,15 @@ def determine_results(data):
         results.append('Не учавствовал')
     return results
 
-async def get_all_rows():
+async def get_all_rows(uid):
     result = []
-    with open(CSV_PATH, 'r') as file:
+    with open(f'{MATCHES_PATH}{uid}', 'r') as file:
         reader = csv.reader(file)
         for row in reader:
             result.append(row)
     return result
-async def calculate_all_games():
-    with open(CSV_PATH, 'r') as file:
+async def calculate_all_games(uid):
+    with open(f'{MATCHES_PATH}{uid}', 'r') as file:
         reader = csv.reader(file)
 
         headers = next(reader)

@@ -1,12 +1,11 @@
 from aiogram import types
-from aiogram.utils.callback_data import CallbackData
 from aiogram.dispatcher import FSMContext
-from settings import bot, AVAILABLE_COLORS
-from states import RegisterTeamsStorage, GameStorage
-from data_csv_engine import register_teams, read_headers, add_team_results, calculate_all_games, get_all_rows, \
-    edit_team_results
 
+from buttons import EXIT_FROM_STATE
 from callbacks import *
+from data_csv_engine import is_registered
+from settings import bot
+
 
 async def get_controls_keyboard(state:FSMContext):
     state_data = await state.get_data()
@@ -45,6 +44,7 @@ async def get_controls_keyboard(state:FSMContext):
             callback_data="finish_game"
         )
     )
+    kb.add(EXIT_FROM_STATE)
     return kb
 async def get_controls_answer(callback: types.CallbackQuery, state: FSMContext):
     await callback.message.delete()
@@ -67,3 +67,30 @@ async def get_controls_answer(callback: types.CallbackQuery, state: FSMContext):
 
 def set_delimiter(delimiter: str, data: list):
     return f"{delimiter.join(data)}"
+
+async def add_or_finish_match(message):
+    text = 'Вітаю. Оберіть потрібний варіант. У вас вже зарєстрований 1 матч'
+    keyboard_button_container = types.InlineKeyboardMarkup(resize_keyboard=True)
+    if await is_registered(message.chat.id):
+        keyboard_button_container.add(types.InlineKeyboardButton("Додати гру ➕", callback_data='add_game'))
+        keyboard_button_container.add(types.InlineKeyboardButton("Отримати статистику ℹ️", callback_data='get_stat'))
+    else:
+        text = "Вітаю, у вас ще не зареєстровано жодного матчу.\n" \
+               "Натисніть на кнопку нижче щоб його створити"
+    keyboard_button_container.add(types.InlineKeyboardButton("Новий матч 🆕", callback_data='begin_match'))
+
+    return await bot.send_message(message.chat.id, text, reply_markup=keyboard_button_container)
+def get_cell_color(text):
+    smile=text[0]
+    if smile=="🔵":
+        return "#4785e8"
+    if smile=="🟡":
+        return "#feff02"
+    if smile=="🟠":
+        return "#fe9900"
+    if smile=="⚪":
+        return "white"
+    if smile=="🔴":
+        return "#fb5c5f"
+    if smile=="🟢":
+        return "#4adc42"
