@@ -16,7 +16,7 @@ def handler_register(dp: Dispatcher) -> None:
     register_register_handlers(dp)
     register_add_handlers(dp)
 
-
+    dp.register_message_handler(reload, commands=['reload'], state="*")
     dp.register_callback_query_handler(write_game_results,
                                        lambda c: c.data == "finish_game",
                                        state=GameStorage.results)

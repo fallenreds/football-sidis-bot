@@ -1,6 +1,6 @@
 from aiogram import types
 from aiogram.dispatcher import FSMContext
-from data_csv_engine import read_headers, add_team_results, calculate_all_games, get_all_rows
+from data_csv_engine import read_headers, add_team_results, calculate_all_games, get_all_rows, delete_file
 from handlers.utils import get_cell_color, add_or_finish_match
 from maketable import get_table
 from settings import bot
@@ -20,10 +20,13 @@ async def begin_match(message):
     edit_cmd = types.BotCommand(
         command="edit", description="Редагувати гру"
     )
+    reload = types.BotCommand(
+        command="reload", description="⚠️Видалити усі дані⚠️"
+    )
 
     await bot.set_my_commands(
         scope=types.BotCommandScopeChat(chat_id=message.chat.id),
-        commands=[start_cmd, add_cmd, edit_cmd]
+        commands=[start_cmd, add_cmd, edit_cmd, reload]
     )
     await add_or_finish_match(message)
 
@@ -111,3 +114,13 @@ async def exit_from_state(callback: types.CallbackQuery, state: FSMContext):
     await state.finish()
     await callback.message.delete()
     return await add_or_finish_match(callback.message)
+
+async def reload(message:types.Message, state:FSMContext):
+    if state:
+        await state.finish()
+        await delete_file(message.chat.id)
+    try:
+        await message.delete()
+    except Exception:
+        pass
+    await add_or_finish_match(message)

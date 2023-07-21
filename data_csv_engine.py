@@ -1,8 +1,13 @@
 import csv
 from typing import TypedDict
 import aiomisc
-
+import os
 from settings import MATCHES_PATH
+
+
+async def delete_file(uid):
+    if await is_registered(uid):
+        return os.remove(f'{MATCHES_PATH}{uid}')
 
 
 async def register_teams(data: TypedDict('teams', {'first': 'str', 'second': 'str', 'third': 'str'}), uid):
@@ -27,13 +32,10 @@ async def append_rows(row: list, uid):
         writer = csv.writer(csvfile)
         writer.writerow(row)
 
+
 async def is_registered(uid):
-    try:
-        with open(f'{MATCHES_PATH}{uid}', 'r') as csvfile:
-            pass
-        return True
-    except FileNotFoundError:
-        return False
+    return os.path.exists(f'{MATCHES_PATH}{uid}')
+
 
 async def edit_csv_row_by_number(file_path, row_number, new_data):
     try:
