@@ -1,7 +1,7 @@
 from aiogram import types
 from aiogram.dispatcher import FSMContext
 
-from buttons import EXIT_FROM_STATE
+from buttons import EXIT_FROM_STATE, DELETE_BUTTON
 from callbacks import *
 from data_csv_engine import is_registered
 from settings import bot
@@ -69,7 +69,7 @@ def set_delimiter(delimiter: str, data: list):
     return f"{delimiter.join(data)}"
 
 async def add_or_finish_match(message):
-    text = 'Вітаю. Оберіть потрібний варіант. У вас вже зарєстрований 1 матч'
+    text = 'Вітаю. Оберіть потрібний варіант. У вас вже зареєстрований 1 матч'
     keyboard_button_container = types.InlineKeyboardMarkup(resize_keyboard=True)
     if await is_registered(message.chat.id):
         keyboard_button_container.add(types.InlineKeyboardButton("Додати гру ➕", callback_data='add_game'))
@@ -78,7 +78,7 @@ async def add_or_finish_match(message):
         text = "Вітаю, у вас ще не зареєстровано жодного матчу.\n" \
                "Натисніть на кнопку нижче щоб його створити"
     keyboard_button_container.add(types.InlineKeyboardButton("Новий матч 🆕", callback_data='begin_match'))
-
+    keyboard_button_container.add(DELETE_BUTTON)
     return await bot.send_message(message.chat.id, text, reply_markup=keyboard_button_container)
 def get_cell_color(text):
     smile=text[0]
