@@ -41,7 +41,6 @@ async def choose_second_team(callback: types.CallbackQuery, state: FSMContext):
     async with state.proxy() as data:
         data['first_team'] = team_label
     await GameStorage.next()
-
     keyboard_button_container = types.InlineKeyboardMarkup(resize_keyboard=True)
     for team in available_teams:
         keyboard_button_container.add(types.InlineKeyboardButton(team, callback_data=team_callback.new(team)))

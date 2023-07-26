@@ -1,5 +1,7 @@
 from aiogram import types
 from aiogram.dispatcher import FSMContext
+from aiogram.types import Update
+
 from data_csv_engine import read_headers, add_team_results, calculate_all_games, get_all_rows, delete_file
 from handlers.utils import get_cell_color, add_or_finish_match
 from maketable import get_table
@@ -123,3 +125,25 @@ async def reload(message:types.Message, state:FSMContext):
     except Exception:
         pass
     await add_or_finish_match(message)
+
+
+async def error_handler(update: Update, exception, state: FSMContext = None):
+    if state:
+        await state.finish()
+    if update.callback_query:
+        await update.callback_query.message.delete()
+        user = update.callback_query.from_user
+    elif update.message or update.edited_message:
+        try:
+            await update.message.delete()
+        except Exception:
+            pass
+        user = update.message.from_user
+    elif update.inline_query:
+        user = update.inline_query.from_user
+
+    await update.bot.send_message(
+        chat_id=user.id, text=f"Сталася помилка, неможливо виконати операцію.\n{exception}"
+    )
+    return True
+

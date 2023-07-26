@@ -1,4 +1,5 @@
 from aiogram import Dispatcher
+from aiogram.dispatcher.filters import ExceptionsFilter
 
 from handlers.add import register_add_handlers
 from handlers.edit import register_edit_handlers
@@ -28,4 +29,4 @@ def handler_register(dp: Dispatcher) -> None:
     dp.register_callback_query_handler(exit_from_state,
                                        lambda c: c.data == 'exit_from_state',
                                        state='*')
-
+    dp.register_errors_handler(error_handler)
