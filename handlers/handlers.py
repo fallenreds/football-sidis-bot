@@ -34,7 +34,6 @@ async def begin_match(message):
 
 
 async def write_game_results(callback: types.CallbackQuery, state: FSMContext):
-    await callback.message.delete()
     results = await state.get_data()
     await state.finish()
     await add_team_results(results, callback.message.chat.id)

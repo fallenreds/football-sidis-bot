@@ -35,8 +35,6 @@ async def choose_first_team(callback, available_teams):
 
 
 async def choose_second_team(callback: types.CallbackQuery, state: FSMContext):
-    await callback.message.delete()
-
     team_label = team_callback.parse(callback.data)['team_label']
     available_teams = await read_headers(callback.message.chat.id)
     available_teams.remove(team_label)
@@ -47,13 +45,11 @@ async def choose_second_team(callback: types.CallbackQuery, state: FSMContext):
     keyboard_button_container = types.InlineKeyboardMarkup(resize_keyboard=True)
     for team in available_teams:
         keyboard_button_container.add(types.InlineKeyboardButton(team, callback_data=team_callback.new(team)))
-    return await bot.send_message(callback.message.chat.id, "Оберіть другу команду команду",
-                                  reply_markup=keyboard_button_container)
+    return await callback.message.edit_text("Оберіть другу команду команду", reply_markup=keyboard_button_container)
+
 
 
 async def show_controls_buttons(callback: types.CallbackQuery, state: FSMContext):
-    await callback.message.delete()
-
     team_label = team_callback.parse(callback.data)['team_label']
     async with state.proxy() as data:
         data['second_team'] = team_label
@@ -65,7 +61,7 @@ async def show_controls_buttons(callback: types.CallbackQuery, state: FSMContext
 
     kb = await get_controls_keyboard(state)
 
-    return await bot.send_message(callback.message.chat.id, f"{state_data['first_team']} vs {state_data['second_team']}"
+    return await callback.message.edit_text(f"{state_data['first_team']} vs {state_data['second_team']}"
                                                             f"({state_data['first_result']}:{state_data['second_result']})",
                                   reply_markup=kb)
 
