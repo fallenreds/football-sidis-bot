@@ -22,13 +22,17 @@ async def begin_match(message):
     edit_cmd = types.BotCommand(
         command="edit", description="Редагувати гру"
     )
-    reload = types.BotCommand(
-        command="reload", description="⚠️Видалити усі дані⚠️"
+    exit_from_state = types.BotCommand(
+        command="reload", description="Перезавантажити стан"
     )
+    reload = types.BotCommand(
+        command="delete", description="⚠️Видалити усі дані⚠️"
+    )
+
 
     await bot.set_my_commands(
         scope=types.BotCommandScopeChat(chat_id=message.chat.id),
-        commands=[start_cmd, add_cmd, edit_cmd, reload]
+        commands=[start_cmd, add_cmd, edit_cmd, reload,exit_from_state]
     )
     await add_or_finish_match(message)
 
@@ -117,6 +121,15 @@ async def exit_from_state(callback: types.CallbackQuery, state: FSMContext):
     return await add_or_finish_match(callback.message)
 
 async def reload(message:types.Message, state:FSMContext):
+    await message.delete()
+    await state.finish()
+    kb = types.InlineKeyboardMarkup()
+    kb.add(
+        DELETE_BUTTON
+    )
+    await message.answer("Успішний вихід зі станів", reply_markup=kb)
+
+async def delete_handlers(message:types.Message, state:FSMContext):
     if state:
         await state.finish()
         await delete_file(message.chat.id)
