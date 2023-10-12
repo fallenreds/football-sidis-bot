@@ -39,12 +39,15 @@ class TournamentWorker:
 
     async def get_last_tournament(self, chat_id) -> Tournament | None:
         last_chat_tournament = await self.chat_tournament_repo.last(chat_id)
+        if not last_chat_tournament:
+            return
         return await self.tournament_repo.get(
             id=last_chat_tournament.tournament_id
         )
 
     async def is_registered_tournament(self, chat_id) -> bool:
-        return bool(await self.get_chat_tournaments(chat_id))
+        for _ in await self.get_chat_tournaments(chat_id):
+            return True
 
     async def get_teams(self, tournament_id: int):
         return [team for team in await self.team_repo.list(tournament_id=tournament_id)]
