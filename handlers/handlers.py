@@ -31,13 +31,13 @@ async def begin_match(message):
     exit_from_state = types.BotCommand(
         command="reload", description="Перезавантажити стан"
     )
-    # reload = types.BotCommand(
-    #     command="delete", description="⚠️Видалити усі дані⚠️"
-    # )
+    reload = types.BotCommand(
+        command="delete", description="⚠️Видалити усі дані⚠️"
+    )
     statistic = types.BotCommand(
         command="statistic", description="📈️ Статистика"
     )
-    commands = [start_cmd, add_cmd, edit_cmd, reload, exit_from_state]
+    commands = [start_cmd, add_cmd, edit_cmd, exit_from_state]
     await register_chat(message.chat.id)
     if is_admin(message.chat.id):
         commands.append(statistic)
