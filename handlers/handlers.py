@@ -2,12 +2,16 @@ from aiogram import types
 from aiogram.dispatcher import FSMContext
 from aiogram.types import Update
 
-from data_csv_engine import read_headers,  get_all_rows, delete_file
-from handlers.utils import get_cell_color, add_or_finish_match
+from data_csv_engine import read_headers, get_all_rows, delete_file
+from handlers.utils import get_cell_color, add_or_finish_match, delete_message
 from maketable import get_table
 from settings import bot
 from buttons import DELETE_BUTTON
-from workers.tournament import TournamentWorker
+from workers.tournament import TournamentWorker, StatisticWorker
+from aiogram.utils.exceptions import MessageToEditNotFound, MessageToDeleteNotFound
+from filters import is_admin
+from repository.repositories import ChatRepository
+from settings import db_url
 
 
 async def begin_match(message):
@@ -30,15 +34,26 @@ async def begin_match(message):
     reload = types.BotCommand(
         command="delete", description="⚠️Видалити усі дані⚠️"
     )
-
-
+    statistic = types.BotCommand(
+        command="statistic", description="📈️ Статистика"
+    )
+    commands = [start_cmd, add_cmd, edit_cmd, reload, exit_from_state]
+    await register_chat(message.chat.id)
+    if is_admin(message.chat.id):
+        commands.append(statistic)
     await bot.set_my_commands(
         scope=types.BotCommandScopeChat(chat_id=message.chat.id),
-        commands=[start_cmd, add_cmd, edit_cmd, reload,exit_from_state]
+        commands=commands
     )
     await add_or_finish_match(message)
 
 
+async def register_chat(chat_id):
+    repository = ChatRepository(db_url=db_url)
+    chat = await repository.get(id=chat_id)
+    if not chat:
+        await repository.create(id=chat_id)
+    await repository.close()
 
 
 async def write_game_results(callback: types.CallbackQuery, state: FSMContext):
@@ -63,14 +78,17 @@ async def write_game_results(callback: types.CallbackQuery, state: FSMContext):
     # await add_team_results(results, callback.message.chat.id)
     return await show_statistic(callback)
 
+
 async def show_statistic(callback: types.CallbackQuery):
+    chat_id = callback.message.chat.id
+
     try:
         await callback.message.delete()
     except Exception:
         pass
 
     async with TournamentWorker() as worker:
-        tournament = await worker.get_last_tournament(callback.message.chat.id)
+        tournament = await worker.get_last_tournament(chat_id)
         tournament_data = await worker.get_tournament_data(tournament.id)
     teams = [team for team in await worker.get_teams(tournament.id)]
     results = await calculate_all_games(tournament.id)
@@ -84,18 +102,18 @@ async def show_statistic(callback: types.CallbackQuery):
 
     data['№'] = [i for i in range(1, len(all_rows))]
     for index, team in enumerate(teams):
-        header_colors[index+1] = get_cell_color(team.name)
+        header_colors[index + 1] = get_cell_color(team.name)
         data[team.name[1:]] = [column[index] for column in all_rows[1:]]
 
     first_team_color = get_cell_color(teams[0].name)
     second_team_color = get_cell_color(teams[1].name)
     third_team_color = get_cell_color(teams[2].name)
 
-    cell_colors[(len(all_rows)-1,1)]=first_team_color
-    cell_colors[(len(all_rows),1)] = first_team_color
-    cell_colors[(len(all_rows) + 1,1)]= first_team_color
-    cell_colors[(len(all_rows) + 2,1)] = first_team_color
-    cell_colors[(len(all_rows) + 3,1)] = first_team_color
+    cell_colors[(len(all_rows) - 1, 1)] = first_team_color
+    cell_colors[(len(all_rows), 1)] = first_team_color
+    cell_colors[(len(all_rows) + 1, 1)] = first_team_color
+    cell_colors[(len(all_rows) + 2, 1)] = first_team_color
+    cell_colors[(len(all_rows) + 3, 1)] = first_team_color
 
     cell_colors[(len(all_rows) - 1, 2)] = second_team_color
     cell_colors[(len(all_rows), 2)] = second_team_color
@@ -109,30 +127,34 @@ async def show_statistic(callback: types.CallbackQuery):
     cell_colors[(len(all_rows) + 2, 3)] = third_team_color
     cell_colors[(len(all_rows) + 3, 3)] = third_team_color
 
-    data['№'].extend(["Матчів","Перемога","Нічия","Поразка", "Очок"])
+    data['№'].extend(["Матчів", "Перемога", "Нічия", "Поразка", "Очок"])
     for result, team in zip(results, teams):
         data[team.name[1:]].extend([
-                                    str(int(result['wins'])+int(result['lose'])+int(result['draw'])),
-                                    result['wins'],
-                                    result['draw'],
-                                    result['lose'],
-                                    result['points']
+            str(int(result['wins']) + int(result['lose']) + int(result['draw'])),
+            result['wins'],
+            result['draw'],
+            result['lose'],
+            result['points']
         ])
 
     image = get_table(data, cell_colors, header_colors, "#49b3a9")
 
-
-
     for result, team in zip(results, teams):
-        response_text +=f"\n\n<b>{team.name} - балів {result['points']}</b>\n" \
-                        f"всього ігор: {int(result['wins'])+int(result['lose'])+int(result['draw'])}\n" \
-                        f"перемоги: {result['wins']}\n" \
-                        f"поразки: {result['lose']}\n" \
-                        f"нічиї {result['draw']}\n"
+        response_text += f"\n\n<b>{team.name} - балів {result['points']}</b>\n" \
+                         f"всього ігор: {int(result['wins']) + int(result['lose']) + int(result['draw'])}\n" \
+                         f"перемоги: {result['wins']}\n" \
+                         f"поразки: {result['lose']}\n" \
+                         f"нічиї {result['draw']}\n"
 
     kb = types.InlineKeyboardMarkup()
     kb.add(DELETE_BUTTON)
-    await bot.send_photo(chat_id=callback.message.chat.id, caption=response_text, photo=image, reply_markup=kb)
+
+    async with StatisticWorker() as worker:
+        statistic_message = await worker.get_chat_statistic_message(chat_id)
+        if statistic_message:
+            await delete_message(chat_id, statistic_message.message_id)
+        message = await bot.send_photo(chat_id=chat_id, caption=response_text, photo=image, reply_markup=kb)
+        await worker.update_statistic_message(chat_id, message.message_id)
     return await add_or_finish_match(callback.message)
 
 
@@ -160,12 +182,14 @@ async def calculate_all_games(tournament_id: int):
 async def delete_message_handler(callback: types.CallbackQuery, state: FSMContext):
     await callback.message.delete()
 
+
 async def exit_from_state(callback: types.CallbackQuery, state: FSMContext):
     await state.finish()
     await callback.message.delete()
     return await add_or_finish_match(callback.message)
 
-async def reload(message:types.Message, state:FSMContext):
+
+async def reload(message: types.Message, state: FSMContext):
     await message.delete()
     await state.finish()
     kb = types.InlineKeyboardMarkup()
@@ -174,7 +198,8 @@ async def reload(message:types.Message, state:FSMContext):
     )
     await message.answer("Успішний вихід зі станів", reply_markup=kb)
 
-async def delete_handlers(message:types.Message, state:FSMContext):
+
+async def delete_handlers(message: types.Message, state: FSMContext):
     if state:
         await state.finish()
         await delete_file(message.chat.id)
@@ -194,7 +219,7 @@ async def error_handler(update: Update, exception, state: FSMContext = None):
     elif update.message or update.edited_message:
         try:
             await update.message.delete()
-        except Exception:
+        except MessageToDeleteNotFound:
             pass
         user = update.message.from_user
     elif update.inline_query:
@@ -204,4 +229,3 @@ async def error_handler(update: Update, exception, state: FSMContext = None):
         chat_id=user.id, text=f"Сталася помилка, неможливо виконати операцію.\n{exception}"
     )
     return True
-

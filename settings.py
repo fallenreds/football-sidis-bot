@@ -8,10 +8,10 @@ load_dotenv()
 # BOT_SETTINGS
 BOT_TOKEN = os.getenv('BOT_TOKEN')
 PARSE_MODE = "HTML"
-
+ADMINS = os.environ.get("ADMINS").split(',')
 storage = MemoryStorage()
 bot = Bot(token=BOT_TOKEN, parse_mode=PARSE_MODE)
-dp = Dispatcher(bot, storage=storage)
+dp = Dispatcher(bot, storage=storage,)
 
 # CSV SETTINGS
 

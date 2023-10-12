@@ -26,10 +26,12 @@ class Chat(Base):
     __tablename__ = "chat"
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=False)
 
+
 class Tournament(Base):
     __tablename__ = "tournament"
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     finish: Mapped[bool] = mapped_column(default=False)
+
 
 class ChatTournament(Base):
     __tablename__ = "chat_tournament"
@@ -40,12 +42,12 @@ class ChatTournament(Base):
     chat: Mapped[Chat] = relationship()
     tournament: Mapped[Tournament] = relationship()
 
+
 class Team(Base):
     __tablename__ = "team"
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     name: Mapped[str]
     tournament_id: Mapped[int] = mapped_column(ForeignKey("tournament.id"))
-
     tournament: Mapped[Tournament] = relationship()
 
 
@@ -64,7 +66,13 @@ class Score(Base):
     game_id: Mapped[int] = mapped_column(ForeignKey("game.id"))
     goals: Mapped[int]
 
-
     team: Mapped[Team] = relationship()
     game: Mapped[Game] = relationship()
 
+
+class ChatStatisticMessage(Base):
+    __tablename__ = "chat_statistic_message"
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    chat_id: Mapped[int] = mapped_column(ForeignKey("chat.id"))
+    message_id: Mapped[int]
+    chat: Mapped[Chat] = relationship()

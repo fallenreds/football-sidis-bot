@@ -9,9 +9,6 @@ class TournamentRepository(BaseRepository):
         return await super().create(**kwargs)
 
 
-
-
-
 class GameRepository(BaseRepository):
     model = Game
 
@@ -26,7 +23,7 @@ class ChatTournamentRepository(BaseRepository):
 
     async def last(self, chat_id) -> ChatTournament | None:
         tournaments = await self.session.execute(
-                select(self.model).filter(self.model.chat_id == chat_id).order_by(self.model.id.desc()).limit(1)
+            select(self.model).filter(self.model.chat_id == chat_id).order_by(self.model.id.desc()).limit(1)
         )
         return tournaments.scalar_one_or_none()
 
@@ -34,7 +31,7 @@ class ChatTournamentRepository(BaseRepository):
 class TeamRepository(BaseRepository):
     model = Team
 
-    async def create(self, tournament_id: int, name: str, **kwargs)->Team:
+    async def create(self, tournament_id: int, name: str, **kwargs) -> Team:
         kwargs['name'] = name
         kwargs['tournament_id'] = tournament_id
         return await super().create(**kwargs)
@@ -42,3 +39,10 @@ class TeamRepository(BaseRepository):
 
 class ScoreRepository(BaseRepository):
     model = Score
+
+
+class ChatStatisticMessageRepository(BaseRepository):
+    model = ChatStatisticMessage
+
+class ChatRepository(BaseRepository):
+    model = Chat

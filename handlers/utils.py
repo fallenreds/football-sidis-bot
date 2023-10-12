@@ -1,10 +1,12 @@
 from aiogram import types
 from aiogram.dispatcher import FSMContext
+from aiogram.utils.exceptions import MessageToDeleteNotFound
+
 from workers.tournament import TournamentWorker
 from buttons import EXIT_FROM_STATE, DELETE_BUTTON
 from callbacks import *
 from data_csv_engine import is_registered
-from settings import bot
+from settings import bot, ADMINS
 from workers.tournament import Team
 
 
@@ -104,6 +106,13 @@ async def add_or_finish_match(message):
     return await bot.send_message(message.chat.id, text, reply_markup=keyboard_button_container)
 
 
+async def delete_message(chat_id, message_id):
+    try:
+        await bot.delete_message(chat_id, message_id)
+    except MessageToDeleteNotFound:
+        pass
+
+
 def get_cell_color(text):
     smile = text[0]
     if smile == "🔵":
@@ -118,3 +127,11 @@ def get_cell_color(text):
         return "#fb5c5f"
     if smile == "🟢":
         return "#4adc42"
+
+
+async def send_multiple_messages(ids: list, text: str, reply_markup):
+    for _id in ids:
+        await bot.send_message(int(_id), text=text, reply_markup=reply_markup)
+
+
+

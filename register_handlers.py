@@ -5,6 +5,7 @@ from handlers.add import register_add_handlers
 from handlers.edit import register_edit_handlers
 from handlers.handlers import *
 from handlers.register import register_register_handlers
+from handlers.admin import register_admin_handlers
 from states import GameStorage
 
 
@@ -12,10 +13,11 @@ def handler_register(dp: Dispatcher) -> None:
     dp.register_message_handler(begin_match, commands="start")
 
 
-
+    register_admin_handlers(dp)
     register_edit_handlers(dp)
     register_register_handlers(dp)
     register_add_handlers(dp)
+
 
     dp.register_message_handler(delete_handlers, commands=['delete'], state="*")
     dp.register_message_handler(reload, commands=['reload'], state="*")

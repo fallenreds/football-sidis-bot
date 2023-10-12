@@ -1,7 +1,9 @@
 from abc import ABC
 from sqlalchemy.ext.asyncio import AsyncSession
 from db.models import Base
-from sqlalchemy.future import select
+# from sqlalchemy.future import select
+from sqlalchemy import update, select
+
 from sqlalchemy.ext.asyncio import create_async_engine
 
 
@@ -54,6 +56,11 @@ class BaseRepository(BaseRepositoryABC):
     async def close(self):
         await self.session.close()
         await self.engine.dispose()
+
+    async def update(self, update_data: dict, **filters):
+        stmt = update(self.model).filter_by(**filters).values(update_data)
+        await self.session.execute(stmt)
+        await self.session.commit()
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         await self.close()
