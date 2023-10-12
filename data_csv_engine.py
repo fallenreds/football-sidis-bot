@@ -68,18 +68,18 @@ def find_column_number(csv_file, value):
 
 
 
-async def add_team_results(data: TypedDict('results', {'first_team': 'str', 'second_team': 'str', 'first_result': 'str',
-                                                       'second_result': 'str'}), uid):
-    headers = await read_headers(uid)
-    values = ['H', 'H', 'H']
-    if data['first_team'] in headers:
-        values[headers.index(data['first_team'])] = str(data['first_result'])
-
-    if data['second_team'] in headers:
-        values[headers.index(data['second_team'])] = str(data['second_result'])
-
-    await append_rows(values,uid)
-    return values
+# async def add_team_results(data: TypedDict('results', {'first_team': 'str', 'second_team': 'str', 'first_result': 'str',
+#                                                        'second_result': 'str'}), uid):
+#     headers = await read_headers(uid)
+#     values = ['H', 'H', 'H']
+#     if data['first_team'] in headers:
+#         values[headers.index(data['first_team'])] = str(data['first_result'])
+#
+#     if data['second_team'] in headers:
+#         values[headers.index(data['second_team'])] = str(data['second_result'])
+#
+#     await append_rows(values,uid)
+#     return values
 
 async def edit_team_results(data: TypedDict('results', {'first_team': 'str', 'second_team': 'str', 'first_result': 'str',
                                                        'second_result': 'str'}),

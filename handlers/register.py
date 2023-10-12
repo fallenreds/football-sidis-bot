@@ -6,8 +6,10 @@ from buttons import DELETE_BUTTON
 from callbacks import *
 from data_csv_engine import register_teams
 from handlers.utils import add_or_finish_match
-from settings import bot, AVAILABLE_COLORS
+from settings import bot, AVAILABLE_COLORS, db_url
 from states import RegisterTeamsStorage
+from repository.repositories import TeamRepository, TournamentRepository, Tournament, Team
+from workers.tournament import TournamentWorker
 
 
 async def register_state_handler(callback: types.CallbackQuery, state: FSMContext = None):
@@ -120,20 +122,19 @@ async def register_third_team(message: types.Message, state: FSMContext):
     state_data = await state.get_data()
     await state.finish()
 
-    await register_teams(
-        {
-            'first': state_data['first'],
-            'second': state_data['second'],
-            'third': state_data['third']
-        },
-        message.chat.id
-    )
+    teams = [
+        state_data['first'],
+        state_data['second'],
+        state_data['third'],
+    ]
+    async with TournamentWorker() as worker:
+        await worker.start(message.chat.id, teams)
 
     team_list = [state_data['first'], state_data['second'], state_data['third']]
     kb = types.InlineKeyboardMarkup()
     kb.add(DELETE_BUTTON)
     await state_data['prevent_message'].edit_text(f'Чудово. Я записав 3 команди:\n<b>{" ".join(team_list)}</b>',
-                           reply_markup=kb)
+                                                  reply_markup=kb)
     return await add_or_finish_match(message)
 
 

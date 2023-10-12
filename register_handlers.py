@@ -31,4 +31,4 @@ def handler_register(dp: Dispatcher) -> None:
     dp.register_callback_query_handler(exit_from_state,
                                        lambda c: c.data == 'exit_from_state',
                                        state='*')
-    dp.register_errors_handler(error_handler)
+    # dp.register_errors_handler(error_handler)

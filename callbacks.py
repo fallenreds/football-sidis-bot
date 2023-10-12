@@ -1,6 +1,6 @@
 from aiogram.utils.callback_data import CallbackData
 
-team_callback = CallbackData('team', 'team_label')
+team_callback = CallbackData('team', 'team_id')
 team_goal_callback = CallbackData('team_goal', 'result')
 team_color = CallbackData('set_team_color', 'color')
 

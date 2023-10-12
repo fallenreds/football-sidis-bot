@@ -37,4 +37,5 @@ COLORS = [
 
 ]
 
+db_url = "sqlite+aiosqlite:///db.sqlite3"
 MATCHES_PATH = 'matches/'

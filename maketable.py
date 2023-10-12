@@ -21,5 +21,6 @@ def get_table(data: dict, cell_colors: dict, col_colors: dict, default_cell_colo
     img_bytes = BytesIO()
 
     plt.savefig(img_bytes, format='png', bbox_inches='tight', pad_inches=0.2)
+    plt.close()
     img_bytes.seek(0)
     return img_bytes

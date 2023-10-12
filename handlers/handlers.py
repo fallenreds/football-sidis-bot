@@ -2,11 +2,13 @@ from aiogram import types
 from aiogram.dispatcher import FSMContext
 from aiogram.types import Update
 
-from data_csv_engine import read_headers, add_team_results, calculate_all_games, get_all_rows, delete_file
+from data_csv_engine import read_headers,  get_all_rows, delete_file
 from handlers.utils import get_cell_color, add_or_finish_match
 from maketable import get_table
 from settings import bot
 from buttons import DELETE_BUTTON
+from workers.tournament import TournamentWorker
+
 
 async def begin_match(message):
     try:
@@ -41,8 +43,24 @@ async def begin_match(message):
 
 async def write_game_results(callback: types.CallbackQuery, state: FSMContext):
     results = await state.get_data()
+
+    data = [
+        (
+            int(results.get('first_team')),
+            int(results.get('first_result'))
+        ),
+        (
+            int(results.get('second_team')),
+            int(results.get('second_result'))
+        ),
+    ]
+    async with TournamentWorker() as worker:
+        tournament = await worker.get_last_tournament(callback.message.chat.id)
+        await worker.add_game(tournament.id, data)
+
     await state.finish()
-    await add_team_results(results, callback.message.chat.id)
+
+    # await add_team_results(results, callback.message.chat.id)
     return await show_statistic(callback)
 
 async def show_statistic(callback: types.CallbackQuery):
@@ -50,21 +68,28 @@ async def show_statistic(callback: types.CallbackQuery):
         await callback.message.delete()
     except Exception:
         pass
-    teams = await read_headers(callback.message.chat.id)
-    results = await calculate_all_games(callback.message.chat.id)
-    all_rows = await get_all_rows(callback.message.chat.id)
+
+    async with TournamentWorker() as worker:
+        tournament = await worker.get_last_tournament(callback.message.chat.id)
+        tournament_data = await worker.get_tournament_data(tournament.id)
+    teams = [team for team in await worker.get_teams(tournament.id)]
+    results = await calculate_all_games(tournament.id)
+    # all_rows = await get_all_rows(callback.message.chat.id)
     response_text = ''
-    data:dict={}
+    data: dict = {}
     cell_colors = {}
     header_colors = {}
-    data['№']=[i for i in range(1, len(all_rows))]
-    for index, team in enumerate(teams):
-        header_colors[index+1] = get_cell_color(team)
-        data[team[1:]]=[column[index] for column in all_rows[1:]]
 
-    first_team_color = get_cell_color(teams[0])
-    second_team_color = get_cell_color(teams[1])
-    third_team_color = get_cell_color(teams[2])
+    all_rows = [[team.name for team in teams], *tournament_data]
+
+    data['№'] = [i for i in range(1, len(all_rows))]
+    for index, team in enumerate(teams):
+        header_colors[index+1] = get_cell_color(team.name)
+        data[team.name[1:]] = [column[index] for column in all_rows[1:]]
+
+    first_team_color = get_cell_color(teams[0].name)
+    second_team_color = get_cell_color(teams[1].name)
+    third_team_color = get_cell_color(teams[2].name)
 
     cell_colors[(len(all_rows)-1,1)]=first_team_color
     cell_colors[(len(all_rows),1)] = first_team_color
@@ -86,7 +111,7 @@ async def show_statistic(callback: types.CallbackQuery):
 
     data['№'].extend(["Матчів","Перемога","Нічия","Поразка", "Очок"])
     for result, team in zip(results, teams):
-        data[team[1:]].extend([
+        data[team.name[1:]].extend([
                                     str(int(result['wins'])+int(result['lose'])+int(result['draw'])),
                                     result['wins'],
                                     result['draw'],
@@ -99,7 +124,7 @@ async def show_statistic(callback: types.CallbackQuery):
 
 
     for result, team in zip(results, teams):
-        response_text +=f"\n\n<b>{team} - балів {result['points']}</b>\n" \
+        response_text +=f"\n\n<b>{team.name} - балів {result['points']}</b>\n" \
                         f"всього ігор: {int(result['wins'])+int(result['lose'])+int(result['draw'])}\n" \
                         f"перемоги: {result['wins']}\n" \
                         f"поразки: {result['lose']}\n" \
@@ -110,6 +135,26 @@ async def show_statistic(callback: types.CallbackQuery):
     await bot.send_photo(chat_id=callback.message.chat.id, caption=response_text, photo=image, reply_markup=kb)
     return await add_or_finish_match(callback.message)
 
+
+async def calculate_all_games(tournament_id: int):
+    async with TournamentWorker() as worker:
+        teams = await worker.get_teams(tournament_id=tournament_id)
+        result = await worker.get_result(tournament_id)
+        statistic = []
+
+        for i, team in enumerate(teams):
+            team_stat = {'wins': 0, 'lose': 0, 'draw': 0, 'points': 0}
+            for variant in result:
+                if variant[i] == 'Победил':
+                    team_stat['wins'] += 1
+                    team_stat['points'] += 3
+                if variant[i] == 'Проиграл':
+                    team_stat['lose'] += 1
+                if variant[i] == 'Ничья':
+                    team_stat['draw'] += 1
+                    team_stat['points'] += 1
+            statistic.append(team_stat)
+        return statistic
 
 
 async def delete_message_handler(callback: types.CallbackQuery, state: FSMContext):
