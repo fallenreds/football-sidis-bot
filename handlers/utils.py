@@ -109,7 +109,7 @@ async def add_or_finish_match(message):
 async def delete_message(chat_id, message_id):
     try:
         await bot.delete_message(chat_id, message_id)
-    except MessageToDeleteNotFound:
+    except Exception as error:
         pass
 
 
